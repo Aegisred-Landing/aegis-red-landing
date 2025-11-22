@@ -266,13 +266,23 @@
         // --- FIREBASE CONFIGURATION ---
         // IMPORTANT: Paste your Firebase Config here from the Console!
         const firebaseConfig = {
-             // REPLACE THIS BLOCK WITH YOUR COPIED CODE
-             apiKey: "YOUR_API_KEY",
-             authDomain: "your-project.firebaseapp.com",
-             projectId: "your-project-id",
-             storageBucket: "your-project.appspot.com",
-             messagingSenderId: "0000000000",
-             appId: "1:0000000000:web:000000000000"
+             // // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+const firebaseConfig = {
+  apiKey: "AIzaSyDNTVZ6KilbDaAODTXpi2zr0lEXD0nAuek",
+  authDomain: "aegis-red-core.firebaseapp.com",
+  projectId: "aegis-red-core",
+  storageBucket: "aegis-red-core.firebasestorage.app",
+  messagingSenderId: "988845308704",
+  appId: "1:988845308704:web:1a0d14eeb62cd02c56b545"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
         };
 
         // Initialize Firebase
