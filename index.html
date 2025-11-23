@@ -264,25 +264,14 @@
         lucide.createIcons();
 
         // --- FIREBASE CONFIGURATION ---
-        // IMPORTANT: Paste your Firebase Config here from the Console!
+        // Your actual credentials
         const firebaseConfig = {
-             // // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
-const firebaseConfig = {
-  apiKey: "AIzaSyDNTVZ6KilbDaAODTXpi2zr0lEXD0nAuek",
-  authDomain: "aegis-red-core.firebaseapp.com",
-  projectId: "aegis-red-core",
-  storageBucket: "aegis-red-core.firebasestorage.app",
-  messagingSenderId: "988845308704",
-  appId: "1:988845308704:web:1a0d14eeb62cd02c56b545"
-};
-
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
+            apiKey: "AIzaSyDNTVZ6KilbDaAODTXpi2zr0lEXD0nAuek",
+            authDomain: "aegis-red-core.firebaseapp.com",
+            projectId: "aegis-red-core",
+            storageBucket: "aegis-red-core.firebasestorage.app",
+            messagingSenderId: "988845308704",
+            appId: "1:988845308704:web:1a0d14eeb62cd02c56b545"
         };
 
         // Initialize Firebase
@@ -291,6 +280,9 @@ const app = initializeApp(firebaseConfig);
             const db = firebase.firestore();
             console.log("Aegis System: Database Connected.");
             
+            // Expose db to window for the submit function
+            window.aegisDb = db;
+
             window.submitLead = async function() {
                 const email = document.getElementById('userEmail').value;
                 const btn = document.querySelector('button[onclick="submitLead()"]');
@@ -299,12 +291,17 @@ const app = initializeApp(firebaseConfig);
                     alert("Please enter a valid email protocol.");
                     return;
                 }
+                
+                if (!window.aegisDb) {
+                     alert("System Error: Database keys missing. Please configure Firebase.");
+                     return;
+                }
 
                 btn.innerText = "Encrypting...";
                 btn.disabled = true;
 
                 try {
-                    await db.collection("leads").add({
+                    await window.aegisDb.collection("leads").add({
                         email: email,
                         timestamp: firebase.firestore.FieldValue.serverTimestamp(),
                         source: "landing_page_v1",
@@ -335,7 +332,7 @@ const app = initializeApp(firebaseConfig);
             }
 
         } catch (e) {
-            console.log("Firebase not configured yet. Please add your config keys.");
+            console.log("Firebase not configured yet. Please add your config keys. Error:", e);
         }
 
         // --- MODAL LOGIC ---
@@ -348,7 +345,7 @@ const app = initializeApp(firebaseConfig);
         }
 
         // --- TERMINAL LOGIC ---
-        const btn = document.getElementById('run-audit-btn');
+        const terminalBtn = document.getElementById('run-audit-btn');
         const terminal = document.getElementById('terminal-content');
         const sequence = [
             { text: 'aegis-audit --target="simulation_node_01" --mode=aggressive', style: 'text-slate-300', delay: 500 },
@@ -361,7 +358,7 @@ const app = initializeApp(firebaseConfig);
             { text: 'root@aegis:~# ', style: 'text-emerald-500 mt-2', delay: 4600, cursor: true }
         ];
 
-        btn.addEventListener('click', () => {
+        terminalBtn.addEventListener('click', () => {
             terminal.innerHTML = '<div class="flex gap-2"><span class="text-emerald-500">root@aegis:~#</span><span class="text-slate-300 cursor-blink">_</span></div>';
             let currentDelay = 0;
             sequence.forEach((step, index) => {
