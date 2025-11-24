@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aegis Red | Command Console</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body { background-color: #020617; color: #e2e8f0; font-family: 'JetBrains Mono', monospace; }
+        .scan-line {
+            position: fixed; top: 0; left: 0; width: 100%; height: 2px;
+            background: rgba(239, 68, 68, 0.3);
+            animation: scan 3s linear infinite; pointer-events: none; z-index: 50;
+        }
+        @keyframes scan { 0% { top: 0%; } 100% { top: 100%; } }
+        .glass-panel { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(12px); border: 1px solid rgba(30, 41, 59, 0.5); }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #020617; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    </style>
+</head>
+<body class="h-screen overflow-hidden flex flex-col">
+    <div class="scan-line"></div>
+
+    <!-- LOGIN OVERLAY -->
+    <div id="login-screen" class="fixed inset-0 z-[100] bg-slate-950 flex items-center justify-center">
+        <div class="w-full max-w-md p-8 space-y-6">
+            <div class="text-center">
+                <i data-lucide="shield-alert" class="w-16 h-16 text-red-600 mx-auto mb-4"></i>
+                <h1 class="text-2xl font-bold text-white tracking-widest">RESTRICTED ACCESS</h1>
+                <p class="text-red-500/60 text-sm mt-2">AUTHORIZATION REQUIRED</p>
+            </div>
+            <input type="password" id="admin-pass" placeholder="ENTER SECURITY TOKEN" 
+                class="w-full bg-slate-900 border border-red-900/30 text-center text-white p-4 rounded focus:outline-none focus:border-red-500 transition-colors placeholder:text-slate-700">
+            <button onclick="attemptLogin()" class="w-full bg-red-600 hover:bg-red-700 text-white font-bold py-4 rounded transition-all tracking-wider">
+                AUTHENTICATE
+            </button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD HEADER -->
+    <header class="h-16 border-b border-slate-800 flex items-center justify-between px-6 bg-slate-950/80 shrink-0">
+        <div class="flex items-center gap-3">
+            <div class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
+            <h1 class="text-xl font-bold text-white tracking-tighter">AEGIS RED <span class="text-slate-600 text-sm">/// COMMAND</span></h1>
+        </div>
+        <div class="flex items-center gap-6 text-xs font-bold text-slate-500">
+            <div class="flex items-center gap-2">
+                <i data-lucide="cpu" class="w-4 h-4"></i>
+                <span>BRAIN: <span class="text-emerald-500">ONLINE</span></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <i data-lucide="database" class="w-4 h-4"></i>
+                <span>DB: <span id="db-status" class="text-amber-500">CONNECTING...</span></span>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTENT -->
+    <main class="flex-1 flex overflow-hidden">
+        <!-- SIDEBAR STATS -->
+        <aside class="w-80 border-r border-slate-800 bg-slate-950/50 p-6 flex flex-col gap-6 hidden md:flex overflow-y-auto">
+            
+            <!-- Stat Card 1 -->
+            <div class="glass-panel p-4 rounded-lg border-l-4 border-emerald-500">
+                <div class="text-slate-500 text-xs font-bold mb-1">TOTAL USERS</div>
+                <div class="text-3xl font-bold text-white" id="stat-users">0</div>
+            </div>
+
+            <!-- Stat Card 2 -->
+            <div class="glass-panel p-4 rounded-lg border-l-4 border-blue-500">
+                <div class="text-slate-500 text-xs font-bold mb-1">KEYS ISSUED</div>
+                <div class="text-3xl font-bold text-white" id="stat-keys">0</div>
+            </div>
+
+            <!-- Stat Card 3 -->
+            <div class="glass-panel p-4 rounded-lg border-l-4 border-red-500">
+                <div class="text-slate-500 text-xs font-bold mb-1">ACTIVE ATTACKS</div>
+                <div class="text-3xl font-bold text-white">0</div>
+                <div class="text-[10px] text-slate-600 mt-2">AWAITING PHASE 4-A</div>
+            </div>
+
+            <!-- Revenue Estimator -->
+            <div class="mt-auto pt-6 border-t border-slate-800">
+                <div class="text-slate-500 text-xs font-bold mb-2">PROJECTED MRR</div>
+                <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden">
+                    <div id="revenue-bar" class="bg-gradient-to-r from-emerald-600 to-emerald-400 h-full w-0 transition-all duration-1000"></div>
+                </div>
+                <div class="flex justify-between text-xs mt-2 text-emerald-500 font-bold">
+                    <span id="revenue-text">$0</span>
+                    <span class="text-slate-600">GOAL: $10k</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- DATA TABLE -->
+        <div class="flex-1 p-0 md:p-6 overflow-hidden flex flex-col">
+            <div class="glass-panel rounded-lg flex-1 border border-slate-800 overflow-hidden flex flex-col">
+                <div class="p-4 border-b border-slate-800 bg-slate-900/50 flex justify-between items-center">
+                    <h2 class="text-sm font-bold text-white flex items-center gap-2">
+                        <i data-lucide="users" class="w-4 h-4 text-blue-500"></i> LIVE SIGNAL FEED
+                    </h2>
+                    <button onclick="fetchData()" class="p-2 hover:bg-slate-800 rounded transition-colors"><i data-lucide="refresh-cw" class="w-4 h-4 text-slate-400"></i></button>
+                </div>
+                
+                <!-- Table Header -->
+                <div class="grid grid-cols-12 gap-4 p-3 bg-slate-950/80 text-[10px] font-bold text-slate-500 uppercase tracking-wider border-b border-slate-800">
+                    <div class="col-span-4">User Email</div>
+                    <div class="col-span-2">Status</div>
+                    <div class="col-span-3">API Key Prefix</div>
+                    <div class="col-span-3 text-right">Timestamp</div>
+                </div>
+
+                <!-- Table Body -->
+                <div id="table-body" class="overflow-y-auto flex-1 p-2 space-y-1">
+                    <!-- Rows injected by JS -->
+                    <div class="text-center py-10 text-slate-600 animate-pulse">initializing uplink...</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // --- CONFIGURATION ---
+        // PASTE YOUR FIREBASE KEYS HERE
+        const firebaseConfig = {
+            apiKey: "AIzaSyDNTVZ6KilbDaAODTXpi2zr0lEXD0nAuek",
+  authDomain: "aegis-red-core.firebaseapp.com",
+  projectId: "aegis-red-core",
+  storageBucket: "aegis-red-core.firebasestorage.app",
+  messagingSenderId: "988845308704",
+  appId: "1:988845308704:web:1a0d14eeb62cd02c56b545"
+        };
+
+        // --- APP LOGIC ---
+        let db;
+        
+        function attemptLogin() {
+            const pass = document.getElementById('admin-pass').value;
+            // Simple client-side gate. 
+            if(pass === 'admin') { // CHANGE THIS PASSWORD IF YOU WANT
+                document.getElementById('login-screen').style.display = 'none';
+                initApp();
+            } else {
+                alert('ACCESS DENIED');
+                document.getElementById('admin-pass').value = '';
+            }
+        }
+
+        // Allow Enter key for login
+        document.getElementById('admin-pass').addEventListener('keypress', function (e) {
+            if (e.key === 'Enter') attemptLogin();
+        });
+
+        function initApp() {
+            try {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                document.getElementById('db-status').innerText = 'CONNECTED';
+                document.getElementById('db-status').classList.remove('text-amber-500');
+                document.getElementById('db-status').classList.add('text-emerald-500');
+                lucide.createIcons();
+                
+                // Setup Live Listener
+                subscribeToLeads();
+            } catch (e) {
+                console.error(e);
+                document.getElementById('db-status').innerText = 'ERROR';
+                document.getElementById('db-status').classList.add('text-red-500');
+                alert("Firebase Config Missing. Edit the file to add your keys.");
+            }
+        }
+
+        function subscribeToLeads() {
+            const tbody = document.getElementById('table-body');
+            
+            // Real-time listener
+            db.collection("leads").orderBy("timestamp", "desc").limit(50)
+                .onSnapshot((snapshot) => {
+                    tbody.innerHTML = '';
+                    let userCount = 0;
+                    let keyCount = 0;
+
+                    snapshot.forEach((doc) => {
+                        const data = doc.data();
+                        userCount++;
+                        if(data.api_key) keyCount++;
+                        
+                        const row = document.createElement('div');
+                        row.className = 'grid grid-cols-12 gap-4 p-3 border-b border-slate-800/50 hover:bg-white/5 transition-colors text-xs items-center';
+                        
+                        // Status Color Logic
+                        let statusColor = 'text-slate-500';
+                        let statusBg = 'bg-slate-800/50';
+                        if(data.status === 'active') { statusColor = 'text-emerald-400'; statusBg = 'bg-emerald-900/20 border-emerald-900/50'; }
+                        if(data.status === 'pending_key') { statusColor = 'text-amber-400'; statusBg = 'bg-amber-900/20 border-amber-900/50 animate-pulse'; }
+
+                        const date = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleString() : 'Just now';
+                        const keyDisplay = data.api_key ? data.api_key.substring(0, 12) + '...' : '---';
+
+                        row.innerHTML = `
+                            <div class="col-span-4 font-bold text-white truncate">${data.email}</div>
+                            <div class="col-span-2">
+                                <span class="px-2 py-1 rounded border ${statusBg} ${statusColor} font-mono text-[10px] uppercase font-bold">
+                                    ${data.status}
+                                </span>
+                            </div>
+                            <div class="col-span-3 font-mono text-slate-400">${keyDisplay}</div>
+                            <div class="col-span-3 text-right text-slate-600">${date}</div>
+                        `;
+                        tbody.appendChild(row);
+                    });
+
+                    // Update Stats
+                    document.getElementById('stat-users').innerText = userCount;
+                    document.getElementById('stat-keys').innerText = keyCount;
+                    
+                    // Fake Revenue Calc ($50 per active user)
+                    const rev = keyCount * 50;
+                    document.getElementById('revenue-text').innerText = `$${rev}`;
+                    document.getElementById('revenue-bar').style.width = `${Math.min((rev/10000)*100, 100)}%`;
+                });
+        }
+
+        lucide.createIcons();
+    </script>
+</body>
+</html>
