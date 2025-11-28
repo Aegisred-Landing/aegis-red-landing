@@ -188,7 +188,8 @@
                         <li class="flex gap-3"><i data-lucide="check" class="text-red-500 w-4 h-4"></i> All 12 Attack Personas</li>
                         <li class="flex gap-3"><i data-lucide="check" class="text-red-500 w-4 h-4"></i> Priority Logic</li>
                     </ul>
-                    <button onclick="openModal('accessModal')" class="mt-8 w-full py-3 rounded-lg bg-red-600 hover:bg-red-700 transition-colors font-bold text-white text-sm">Start Siege Mode</button>
+                    <!-- STRIPE LINK INTEGRATED HERE -->
+                    <a href="https://buy.stripe.com/3cIdR2cK1bF12qmfx77Re00" target="_blank" class="mt-8 w-full py-3 rounded-lg bg-red-600 hover:bg-red-700 transition-colors font-bold text-white text-sm flex justify-center items-center cursor-pointer">Start Siege Mode</a>
                 </div>
 
                 <div class="p-8 rounded-2xl border border-slate-800 bg-slate-950/50">
@@ -270,11 +271,13 @@
                 <i data-lucide="shield" class="text-slate-600 h-5 w-5"></i>
                 <span class="font-bold text-slate-400">AEGIS RED LLC</span>
             </div>
-            <div class="text-slate-600 text-sm">
-                &copy; 2025 Aegis Red. All systems operational.
+            <div class="text-slate-600 text-sm flex gap-4">
+                <span>&copy; 2025 Aegis Red. All systems operational.</span>
+                <a href="terms.html" class="hover:text-white transition-colors">Terms</a>
+                <a href="privacy.html" class="hover:text-white transition-colors">Privacy</a>
             </div>
             <div class="flex gap-6 mt-4 md:mt-0">
-                <a href="#" class="text-slate-600 hover:text-white transition-colors"><i data-lucide="twitter" class="h-5 w-5"></i></a>
+                <a href="https://twitter.com/AegisRedAI" class="text-slate-600 hover:text-white transition-colors"><i data-lucide="twitter" class="h-5 w-5"></i></a>
                 <a href="#" class="text-slate-600 hover:text-white transition-colors"><i data-lucide="github" class="h-5 w-5"></i></a>
             </div>
         </div>
@@ -284,7 +287,6 @@
         lucide.createIcons();
 
         // --- FIREBASE CONFIGURATION ---
-        // Your Verified Keys
         const firebaseConfig = {
             apiKey: "AIzaSyDNTVZ6KilbDaAODTXpi2zr0lEXD0nAuek",
             authDomain: "aegis-red-core.firebaseapp.com",
